@@ -5,7 +5,10 @@ using UnityEngine;
 public class AIBase : CharacterBase
 {
 
+    public enum sight { WALL, GROUND, FALL, HIGH_JUMP, FAR_HIGH_JUMP, LONG_JUMP, LONGER_JUMP }
     public GameObject[] m_players;
+    public GameObject DEBUG_TOOL;
+    public List<GameObject> m_currDebugTools;
 
     public float m_patrolSpeed;
     public float m_alerted;
@@ -13,6 +16,7 @@ public class AIBase : CharacterBase
     public float m_alertTime = 5.0f;
     public float m_attackDistance = 2.0f;
     public float m_sightDistance = 7.0f;
+    public float m_environmentalSight = 1.0f;
 
     // Use this for initialization
     new protected void Start()
@@ -27,22 +31,25 @@ public class AIBase : CharacterBase
     {
         base.Update();
 
-        if (m_coolDown > 0 || !m_ground)
+        if (m_coolDown > 0 || GetComponent<Rigidbody2D>().velocity.y != 0)
             return;
 
         if (m_alerted > 0)
         {
             m_alerted -= Time.deltaTime;
             if (m_alerted < 0)
+            {
                 m_alerted = 0;
+                GetComponent<SpriteRenderer>().color = Color.blue;
+            }
         }
 
-        Vector3 direction = new Vector3(transform.position.x + 2, transform.position.y - 1.0f, transform.position.z);
+        Vector3 direction = new Vector3(transform.position.x + m_environmentalSight, transform.position.y - 1, transform.position.z);
 
         if (!CheckForPlayer(ref direction))
             Patrol(ref direction);
 
-        CheckSight(direction);
+        CheckSight(sight.LONGER_JUMP);
     }
 
     protected void ChangeDirection()
@@ -64,7 +71,7 @@ public class AIBase : CharacterBase
             if (m_players[i].GetComponent<CharacterBase>().m_isAlive && Vector3.Distance(m_players[i].transform.position, transform.position) < m_sightDistance)
                 if (m_alerted > 0 ||
                     transform.eulerAngles.y == 0 && m_players[i].transform.position.x > transform.position.x ||
-                    transform.eulerAngles.y == 0 && m_players[i].transform.position.x < transform.position.x)
+                    transform.eulerAngles.y == 180 && m_players[i].transform.position.x < transform.position.x)
                 {
 
                     RaycastHit2D[] hits = Physics2D.RaycastAll(transform.position, (m_players[i].transform.position - transform.position));
@@ -78,6 +85,7 @@ public class AIBase : CharacterBase
                         if (currDist < closestDistance)
                         {
                             m_alerted = m_alertTime;
+                            GetComponent<SpriteRenderer>().color = Color.red;
                             closestDistance = currDist;
                             closestPlayer = m_players[i];
                         }
@@ -141,41 +149,153 @@ public class AIBase : CharacterBase
         if (transform.eulerAngles.y == 0)
         {
             transform.SetPositionAndRotation(new Vector3(transform.position.x + speed, transform.position.y, transform.position.z), transform.rotation);
-            _direction = new Vector3(transform.position.x + 2, transform.position.y - 1.0f, transform.position.z);
+            _direction.x = transform.position.x + m_environmentalSight;
         }
         else if (transform.eulerAngles.y == 180)
         {
             transform.SetPositionAndRotation(new Vector3(transform.position.x - speed, transform.position.y, transform.position.z), transform.rotation);
-            _direction = new Vector3(transform.position.x - 2, transform.position.y - 1.0f, transform.position.z);
+            _direction.x = transform.position.x - m_environmentalSight;
         }
     }
 
-    protected void CheckSight(Vector3 _direction)
+    protected bool CheckSight(sight _mode)
     {
-        RaycastHit2D[] hits = Physics2D.RaycastAll(transform.position, (_direction - transform.position));
-        Debug.DrawRay(transform.position, (_direction - transform.position));
+        BoxCollider2D col = GetComponent<BoxCollider2D>();
+        Vector3 start = new Vector3(col.bounds.max.x + 0.1f, transform.position.y, transform.position.z);
+        Vector3 end = new Vector3(transform.position.x + m_environmentalSight, transform.position.y, transform.position.z);
 
-        bool groundInFront = false;
-
-        for (int i = 0; i < hits.Length; i++)
+        if (transform.eulerAngles.y == 180)
         {
-            if (hits[i].transform.gameObject.tag == "Ground")
-                groundInFront = true;
-            else if (m_alerted > 0 && hits[i].transform.gameObject.tag == "Wall" && m_ground)
-                Jump(5.0f);
+            start.x = col.bounds.min.x - 0.1f;
+            end.x = transform.position.x - m_environmentalSight;
         }
 
-        if (m_alerted == 0 && !groundInFront)
-            ChangeDirection();
-        else if (m_alerted > 0 && !groundInFront && m_ground)
-            Jump(5.0f);
+        switch (_mode)
+        {
+            case sight.GROUND:
+                end.y -= 1;
+                start.y = end.y;
+                break;
+            case sight.FALL:
+                start.x = end.x;
+                end.y -= 6;
+                break;
+            case sight.HIGH_JUMP:
+                end.y += 1.5f;
+                start.y = end.y;
+                break;
+            case sight.FAR_HIGH_JUMP:
+                end.x += 1.5f;
+                end.y += 1.5f;
+                start.y = end.y;
+                break;
+            case sight.LONG_JUMP:
+                end.y -= 4;
+                end.x = start.x = transform.position.x + 3;
+                if (transform.eulerAngles.y == 180)
+                    end.x = start.x = transform.position.x - 3;
+                break;
+            case sight.LONGER_JUMP:
+                start.y += 1.0f;
+                end.y -= 2;
+                end.x = start.x = transform.position.x + 5;
+                if (transform.eulerAngles.y == 180)
+                    end.x = start.x = transform.position.x - 5;
+                break;
+            default:
+                break;
+        }
+
+        RaycastHit2D hit = Physics2D.Linecast(start, end, 1);
+        Debug.DrawLine(start, end);
+
+        if (hit.collider == null || hit.transform.gameObject.name != "Collision" && hit.transform.gameObject.name != "Platform")
+        {
+            if (_mode == sight.WALL && !CheckSight(sight.GROUND))
+            {
+                if (CheckSight(sight.LONG_JUMP) || CheckSight(sight.LONGER_JUMP))
+                    return true;
+
+                if (!CheckSight(sight.FALL))
+                    ChangeDirection();
+            }
+            else if (_mode == sight.HIGH_JUMP && CheckSight(sight.FAR_HIGH_JUMP))
+                return true;
+
+            return false;
+        }
+
+        switch (_mode)
+        {
+            case sight.WALL: // If we are looking for a wall, look straight ahead
+                if (GetComponent<Rigidbody2D>().velocity.y == 0 && !CheckSight(sight.HIGH_JUMP))
+                    return true;
+
+                ChangeDirection();
+                break;
+            case sight.GROUND: // If we are checking the ground, look down
+            case sight.FALL:
+            case sight.HIGH_JUMP: // if we are checking for jumpable terrain, look up
+                Jump(2.0f, 13.0f);
+                return true;
+            case sight.FAR_HIGH_JUMP:
+                Jump(5.0f, 15.0f);
+                return true;
+            case sight.LONG_JUMP:
+                if (hit.point.y < transform.position.y)
+                    Jump(4.0f, 9.0f);
+                else
+                    return false;
+
+                return true;
+            case sight.LONGER_JUMP:
+                if (hit.point.y == start.y)
+                    return false;
+                else if (hit.point.y > transform.position.y)
+                    Jump(8.0f, 14.0f);
+                else if (hit.point.y < transform.position.y)
+                    Jump(7.0f, 10.0f);
+                
+                return true;
+            default:
+                break;
+        }
+
+        return false;
     }
 
     override protected void OnCollisionEnter2D(Collision2D collision)
     {
         base.OnCollisionEnter2D(collision);
 
+        if (collision.gameObject.name == "Collision")
+        {
+            BoxCollider2D col = GetComponent<BoxCollider2D>();
+
+            for (int i = 0; i < collision.contacts.Length; i++)
+            {
+                if (collision.contacts[i].point.y <= col.bounds.min.y)
+                    Debug.Log("GROOOOUND HOOOO");
+            }
+        }
+
         if (collision.gameObject.tag == "Player")
+        {
             m_alerted = m_alertTime;
+            GetComponent<SpriteRenderer>().color = Color.red;
+        }
+    }
+
+    override protected void OnTriggerStay2D(Collider2D collision)
+    {
+        base.OnTriggerStay2D(collision);
+
+        if (collision.gameObject.name == "platform")
+        {
+            float colMaxYBounds = collision.GetComponent<PolygonCollider2D>().bounds.max.y;
+
+            if (colMaxYBounds > transform.position.y)
+                Jump(0, 8.0f);
+        }
     }
 }

@@ -38,11 +38,8 @@ public class CharacterController : CharacterBase {
                 transform.SetPositionAndRotation(transform.position, Quaternion.Euler(0, 0, 0));
         }
 
-        if (Input.GetButtonDown("Jump") && m_ground)
-        {
-            m_ground = null;
-            GetComponent<Rigidbody2D>().AddForce(new Vector2(0, m_jumpForce), ForceMode2D.Impulse);
-        }
+        if (Input.GetButtonDown("Jump") && Input.GetAxisRaw("Vertical") >= 0)
+            Jump(0, m_jumpForce);
 
         if (Input.GetButtonDown("Fire1") && m_coolDown == 0)
         {

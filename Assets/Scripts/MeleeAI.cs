@@ -38,7 +38,7 @@ public class MeleeAI : AIBase {
     {
         base.Attack(_player);
 
-        float x = 4.5f;
+        float x = 6.5f;
         float y = 2.5f;
         if (_player.transform.position.x < transform.position.x)
             x *= -1;

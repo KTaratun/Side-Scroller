@@ -1,0 +1,34 @@
+﻿# Tiled2Unity generated file. Do not modify by hand.
+# Wavefront file for 'mine7-7440-10x10_mesh_0006.obj'
+
+# Vertices (Count = 12)
+v -112 -80 0
+v -128 -80 0
+v -128 -64 0
+v -112 -64 0
+v -32 -112 0
+v -48 -112 0
+v -48 -96 0
+v -32 -96 0
+v -112 -112 0
+v -128 -112 0
+v -128 -96 0
+v -112 -96 0
+
+# Texture cooridinates (Count = 4)
+vt 0.1944444 0.7777778
+vt 0.2222222 0.7777778
+vt 0.2222222 0.8055556
+vt 0.1944444 0.8055556
+
+# Normal
+vn 0 0 -1
+
+# Mesh description
+g mine7-7440-10x10_mesh_0006
+
+# Faces
+f 1/1/1 2/2/1 3/3/1 4/4/1
+f 5/1/1 6/2/1 7/3/1 8/4/1
+f 9/1/1 10/2/1 11/3/1 12/4/1
+

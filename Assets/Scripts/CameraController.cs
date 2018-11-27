@@ -32,8 +32,8 @@ public class CameraController : MonoBehaviour {
         float smallestX = 5000.0f;
         float smallestY = 5000.0f;
         float camZoom = -6;
-        float xMod = -0.5f;
-        float yMod = -1.0f;
+        float xMod = -0.3f;
+        float yMod = -0.55f;
         float x = 0;
         float y = 0;
 
@@ -54,23 +54,26 @@ public class CameraController : MonoBehaviour {
                 greatestY = m_targets[i].transform.position.y;
         }
 
-        float xDis = xMod * ((-1 * smallestX) + greatestX) - 4;
-        float yDis = yMod * ((-1 * smallestY) + greatestY) - 3;
+        float xDis = Mathf.Abs(xMod * ((-1 * smallestX) + greatestX)) + 4;
+        float yDis = Mathf.Abs(yMod * ((-1 * smallestY) + greatestY)) + 5;
 
         // Check if screen needs to be wider for x or y
-        if (xDis < yDis)
+        if (xDis > yDis)
             camZoom = xDis;
         else
             camZoom = yDis;
 
         // Max zoom
-        if (camZoom > -6)
-            camZoom = -6;
+        if (camZoom < 5)
+            camZoom = 5;
+
+        Camera cam = GetComponent<Camera>();
+        cam.orthographicSize = camZoom;
 
         // Center screen
         x /= m_targets.Length;
         y /= m_targets.Length;
 
-        transform.position = new Vector3(x, y + 1, camZoom);
+        transform.position = new Vector3(x, y + 1, -10);
     }
 }

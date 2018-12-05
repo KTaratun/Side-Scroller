@@ -8,7 +8,7 @@ public class MeleeAI : AIBase {
     new protected void Start()
     {
         base.Start();
-        m_attackDistance = 3.0f;
+        m_attackDistance = 2.5f;
     }
 
     // Update is called once per frame
@@ -30,7 +30,7 @@ public class MeleeAI : AIBase {
                 m_coolDown = 0;
         }
 
-        if (m_weapon.activeSelf && m_coolDown <= m_weapon.GetComponent<WeaponBase>().m_attackTime * 0.5)
+        if (m_weapon.gameObject.activeSelf && m_coolDown <= m_weapon.GetComponent<WeaponBase>().m_attackTime * 0.5)
             m_weapon.GetComponent<WeaponBase>().ResetWeapon();
     }
 
@@ -38,11 +38,11 @@ public class MeleeAI : AIBase {
     {
         base.Attack(_player);
 
-        float x = 6.5f;
-        float y = 2.5f;
+        float x = 1.5f;
+        float y = 0;
         if (_player.transform.position.x < transform.position.x)
             x *= -1;
 
-        GetComponent<Rigidbody2D>().AddForce(new Vector2(x, y), ForceMode2D.Impulse);
+        m_rb.AddForce(new Vector2(x, y), ForceMode2D.Impulse);
     }
 }

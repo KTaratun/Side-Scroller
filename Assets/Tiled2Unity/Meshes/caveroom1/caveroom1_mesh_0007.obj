@@ -1,0 +1,24 @@
+﻿# Tiled2Unity generated file. Do not modify by hand.
+# Wavefront file for 'caveroom1_mesh_0007.obj'
+
+# Vertices (Count = 4)
+v -128 -48 0
+v -144 -48 0
+v -144 -32 0
+v -128 -32 0
+
+# Texture cooridinates (Count = 4)
+vt 0.3888889 0.9166667
+vt 0.4166667 0.9166667
+vt 0.4166667 0.9444444
+vt 0.3888889 0.9444444
+
+# Normal
+vn 0 0 -1
+
+# Mesh description
+g caveroom1_mesh_0007
+
+# Faces
+f 1/1/1 2/2/1 3/3/1 4/4/1
+

@@ -4,33 +4,46 @@ using UnityEngine;
 
 public class CharacterBase : MonoBehaviour {
 
-    public GameObject m_weapon;
+    protected float v_slideVal = 0.9f;
+
+    public WeaponBase m_weapon;
 
     public float m_moveSpeed = 0.05f;
     public float m_jumpForce = 8.0f;
     public float m_coolDown = 0.0f;
     public int m_health = 50;
     public bool m_isAlive = true;
+    public float m_slideFactor;
+
+    protected Rigidbody2D m_rb;
+    protected Animator m_anim;
 
     // Use this for initialization
     protected void Start()
     {
+        m_rb = GetComponent<Rigidbody2D>();
+        m_anim = GetComponent<Animator>();
+        m_slideFactor = v_slideVal;
     }
 
     // Update is called once per frame
     protected void Update()
     {
         CoolDown();
+
+       // Affects the amount you slide
+       if (m_rb.velocity.x != 0 && m_rb.velocity.y == 0)
+            m_rb.velocity = new Vector2(m_rb.velocity.x * m_slideFactor, m_rb.velocity.y);
     }
 
     virtual protected void Jump(float _x, float _y)
     {
-        if (GetComponent<Rigidbody2D>().velocity.y != 0)
+        if (m_rb.velocity.y != 0)
             return;
 
         if (transform.eulerAngles.y == 180)
             _x *= -1;
-        GetComponent<Rigidbody2D>().AddForce(new Vector2(_x, _y), ForceMode2D.Impulse);
+        m_rb.AddForce(new Vector2(_x, _y), ForceMode2D.Impulse);
     }
 
     virtual protected void CoolDown()
@@ -42,40 +55,70 @@ public class CharacterBase : MonoBehaviour {
             if (m_coolDown <= 0)
             {
                 if (m_weapon)
-                    m_weapon.GetComponent<WeaponBase>().ResetWeapon();
+                    m_weapon.ResetWeapon();
                 m_coolDown = 0;
             }
         }
     }
 
-    virtual protected void OnCollisionEnter2D(Collision2D collision)
+    virtual public void Hit(int _damage, float _force)
     {
-        //if (collision.contacts.Length > 0)
-        //{
-        //    ContactPoint2D contact = collision.contacts[0];
-        //    if (Vector3.Dot(contact.normal, Vector3.up) > 0.5)
-        //        m_ground = collision.gameObject;
-        //}
+        m_health -= _damage;
+
+        Knockback(_force);
+
+        if (m_health <= 0)
+            Death();
+    }
+
+    protected void Knockback(float _force)
+    {
+        float x = _force;
+        float y = 2.5f;
+
+        if (transform.position.x > transform.position.x)
+            x *= -1;
+
+        m_rb.AddForce(new Vector2(x, y), ForceMode2D.Impulse);
+    }
+
+    virtual public void Death()
+    {
+        transform.SetPositionAndRotation(new Vector3(transform.position.x, transform.position.y - .55f, transform.position.z), Quaternion.Euler(0, 0, 90));
+        m_isAlive = false;
+        GetComponent<CapsuleCollider2D>().isTrigger = true;
+        m_rb.constraints = RigidbodyConstraints2D.FreezePosition;
     }
 
     virtual protected void OnTriggerStay2D(Collider2D collision)
     {
         if (collision.gameObject.tag == "Platform")
         {
-            Rigidbody2D rigidbody = GetComponent<Rigidbody2D>();
             CapsuleCollider2D boxCol = GetComponent<CapsuleCollider2D>();
-            float colMaxYBounds = collision.GetComponent<BoxCollider2D>().bounds.max.y;
+            float colMaxYBounds = collision.gameObject.GetComponent<BoxCollider2D>().bounds.max.y;
 
-            if (rigidbody.velocity.y <= 0 && boxCol.bounds.min.y > colMaxYBounds - 0.5f &&
-                (Input.GetAxisRaw("Vertical") >= 0 || !Input.GetButton("Jump")))
+            if (Input.GetButtonDown("Jump") && Input.GetKey(KeyCode.S))
             {
-                rigidbody.velocity = new Vector3(rigidbody.velocity.x, 0);
-                rigidbody.angularVelocity = 0;
+                transform.SetPositionAndRotation(new Vector3(transform.position.x, colMaxYBounds + 0.3f, transform.position.z), transform.rotation);
+                m_rb.velocity = new Vector2(m_rb.velocity.x, -5f);
+            }
+            else if (m_rb.velocity.y <= 0 && boxCol.bounds.min.y > colMaxYBounds - 0.5f || m_rb.velocity.y < -15)
+            {
+                m_rb.velocity = new Vector3(m_rb.velocity.x, 0);
+                m_rb.angularVelocity = 0;
 
                 float bodyOffset = transform.position.y - boxCol.bounds.min.y;
                 transform.SetPositionAndRotation(new Vector3(transform.position.x, colMaxYBounds + bodyOffset, transform.position.z), transform.rotation);
+
+                m_slideFactor = 0.8f;
             }
         }
         //else if (collision.gameObject.tag == "PickUp")
+    }
+
+    virtual protected void OnTriggerExit2D(Collider2D collider)
+    {
+        if (collider.gameObject.tag == "Platform")
+            m_slideFactor = v_slideVal;
     }
 }

@@ -24,7 +24,7 @@ public class LevelManager : MonoBehaviour {
         InitRooms();
 
         //m_players.p (Instantiate(Resources.Load<GameObject>("Characters/Character");
-        m_players[0].transform.position = m_rooms[m_path[0]].m_door.transform.position;
+        //m_players[0].transform.position = m_rooms[m_path[0]].m_door.transform.position;
 
         AssignNeighbors();
 
@@ -109,7 +109,7 @@ public class LevelManager : MonoBehaviour {
                     break;
                 }
 
-                if (j == randNeighbor.Length - 1)
+                if (j == randNeighbor.Length - 1 && m_path.Count - rewind >= 0)
                 {
                     currRoom = m_path[m_path.Count - rewind];
                     rewind++;
